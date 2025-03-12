@@ -1,43 +1,66 @@
 class EntityFactory {
     constructor() {
-        this.entites = {};
+        this.entities = {};
     }
 
-    createMonster(prefab, name, health, damage) {
-        if (!this.entites[prefab]) {
-            console.log(`[Log] New Entity Registered: ${prefab}`);
-            this.entites[prefab] = new Monster(prefab, name, health, damage);
+    getMonsterState(prefab) {
+        if (!this.entities[prefab]) {
+            console.log(`[Log] New Shared State Registered: ${prefab}`);
+            this.entities[prefab] = MonsterSharedState.create(prefab);
         }
+        return this.entities[prefab];
+    }
+
+    createMonster(prefab, health) {
+        const sharedState = this.getMonsterState(prefab);
         console.log(`[Log] Instantiating New Entity: ${prefab}`);
-        let newEntity = this.entites[prefab]
-        newEntity.name = this.name;
-        newEntity.health = this.health;
-        newEntity.damage = this.damage;
-        return newEntity;
+        return new Monster(sharedState, health);
     }
 
-    bulkCreateMonster(prefab, name, health, damage, quantity) {
+    bulkCreateMonster(prefab, health, quantity) {
+        const monsters = [];
         for (let i = 0; i < quantity; i++) {
-            this.createMonster(prefab, name, health, damage);
+            monsters.push(this.createMonster(prefab, health));
         }
+        return monsters;
+    }
+}
+
+class MonsterSharedState {
+    constructor(prefab, name, maxhealth, damage) {
+        this.prefab = prefab;
+        this.name = name;
+        this.maxhealth = maxhealth;
+        this.damage = damage;
+    }
+
+    static create(prefab) {
+        const monsterTypes = {
+            spider: new MonsterSharedState("spider", "Spider", 100, 20),
+            spider_warrior: new MonsterSharedState("spider_warrior", "Spider Warrior", 200, 40),
+            spider_hider: new MonsterSharedState("spider_hider", "Cave Spider", 600, 20)
+        };
+        return monsterTypes[prefab];
     }
 }
 
 class Monster {
-    constructor(prefab, name, health, damage) {
-        this.prefab = prefab; // código singular
-        this.name = name;
+    constructor(sharedState, health) {
+        this.sharedState = sharedState;
         this.health = health;
-        this.damage = damage;
     }
 
     details() {
-        console.log(`[Log] ${this.prefab} information:\nname: ${this.name}\nhealth: ${this.health}\ndamage: ${this.damage}`);
+        console.log(`[Log] ${this.sharedState.prefab} information:\nname: ${this.sharedState.name}\nhealth: ${this.health}\ndamage: ${this.sharedState.damage}`);
     }
 }
 
 const entityFactory = new EntityFactory();
 
-const spider = entityFactory.bulkCreateMonster("spider", "Spider", 100, 20, 6);
-const spider_warrior = entityFactory.createMonster("spider_warrior", "Spider Warrior", 200, 40);
-const spider_hider = entityFactory.createMonster("spider_hider", "Cave Spider", 600, 20);
+const spiders = entityFactory.bulkCreateMonster("spider", 80, 6);
+const spiderWarrior = entityFactory.createMonster("spider_warrior", 180);
+const spiderHider = entityFactory.createMonster("spider_hider", 500);
+
+spiders.forEach(spider => spider.details());
+spiderWarrior.details();
+spiderHider.details();
